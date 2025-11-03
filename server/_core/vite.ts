@@ -48,16 +48,35 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  // Vercel環境とローカル環境の両方に対応
-  const distPath = process.env.NODE_ENV === "development"
-    ? path.resolve(import.meta.dirname, "../..", "dist", "public")
-    : path.resolve(import.meta.dirname, "../..", "dist", "public");
+  // 本番環境では process.cwd() を使う（Railwayなどのデプロイ環境に対応）
+  let distPath: string;
+  
+  if (process.env.NODE_ENV === "development") {
+    // 開発環境: プロジェクトルートから
+    distPath = path.resolve(import.meta.dirname, "../..", "dist", "public");
+  } else {
+    // 本番環境: プロジェクトルートからの相対パスを使用
+    // Railwayなどでは作業ディレクトリがプロジェクトルートになる
+    distPath = path.resolve(process.cwd(), "dist", "public");
+    
+    // もし見つからない場合、dist/index.js からの相対パスも試す
+    if (!fs.existsSync(distPath)) {
+      const alternativePath = path.resolve(import.meta.dirname, "public");
+      if (fs.existsSync(alternativePath)) {
+        distPath = alternativePath;
+      }
+    }
+  }
+  
+  console.log("[Static] Serving from:", distPath);
+  console.log("[Static] Current working directory:", process.cwd());
+  console.log("[Static] __dirname:", import.meta.dirname);
   
   if (!fs.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
-    // Vercel環境ではdist/publicが存在する前提
+    // エラーでも続行（APIのみ動作）
     return;
   }
 
