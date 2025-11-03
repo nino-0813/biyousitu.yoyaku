@@ -1,0 +1,14 @@
+import { initTRPC } from "@trpc/server";
+import superjson from "superjson";
+import type { TrpcContext } from "./context";
+
+const t = initTRPC.context<TrpcContext>().create({
+  transformer: superjson,
+});
+
+export const router = t.router;
+export const publicProcedure = t.procedure;
+
+// 認証を削除したため、protectedProcedureはpublicProcedureのエイリアスとして定義
+export const protectedProcedure = publicProcedure;
+export const adminProcedure = publicProcedure;
